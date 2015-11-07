@@ -64,12 +64,12 @@ namespace Client_Server
                     try
                     {
                         string r = Calculate(content).ToString();
-                        Send(r, state);
+                        Send(r + "<EOF>", state);
                     }
                     catch (Exception e)
                     {
 
-                        Send(e.Message, state);
+                        Send(e.Message+"<EOF>", state);
                     }
                     
                 }

@@ -4,15 +4,17 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Net.Sockets;
+using System.Net;
+using System.Threading;
 namespace Client_Server
 {
     abstract class Client
     {
-        private uint Port;
-
-        public Client(uint Port,bool TCP)
+        protected IPEndPoint EndPoint;
+        public Client(int Port, IPAddress IP)
         {
-
+            EndPoint = new IPEndPoint(IP, Port);
         }
+        abstract public void Start(int[] Number);
     }
 }
