@@ -1,28 +1,17 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading;
 namespace Client_Server
 {
-    class TCPServer
+    class TCPServer:Server
     {
-        IPEndPoint EndPoint;
-        private ManualResetEvent Next = new ManualResetEvent(false);
-        public TCPServer()
+        public TCPServer(int Port, IPAddress IP):base(Port,IP)
         {
-
         }
 
-        public TCPServer(int Port, IPAddress IP)
-        {
-            EndPoint = new IPEndPoint(IP, Port);
-        }
-
-        public void Start()
+        public override void Start()
         {
             try
             {
@@ -46,18 +35,19 @@ namespace Client_Server
             Console.ReadLine();
         }
 
-        private void AcceptCallback(IAsyncResult Result)
+        protected void AcceptCallback(IAsyncResult Result)
         {
             Next.Set();
             Socket S = (Socket)Result.AsyncState;
             Socket ClientSocket = S.EndAccept(Result);
+            S.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.Linger, new LingerOption(true, 0));
             State state = new State();
             state.ClientSocket = ClientSocket;
             ClientSocket.BeginReceive(state.Buffer, 0, State.BufferSize, 0, new AsyncCallback(RecieveCallback), state);
         }
 
 
-        private void RecieveCallback(IAsyncResult Result)
+        protected override void RecieveCallback(IAsyncResult Result)
         { 
             State state = (State)Result.AsyncState;
             int bytes = state.ClientSocket.EndReceive(Result);
@@ -67,24 +57,25 @@ namespace Client_Server
                 state.MsgBuilder.Append(Encoding.ASCII.GetString(state.Buffer, 0, bytes));
                 content = state.MsgBuilder.ToString();
                 int k = content.IndexOf("<EOF>");
+               
                 if (k >-1)
                 {
                     content = content.Substring(0, k);
-                    //Console.WriteLine(content.Substring(0,k));
                     try
                     {
                         string r = Calculate(content).ToString();
-                        Send(r, state.ClientSocket);
+                        Send(r, state);
                     }
                     catch (Exception e)
                     {
 
-                        Send(e.Message, state.ClientSocket);
+                        Send(e.Message, state);
                     }
                     
                 }
                 else
                 {
+                    state.Buffer = new byte[State.BufferSize];
                     state.ClientSocket.BeginReceive(state.Buffer, 0, State.BufferSize, 0, new AsyncCallback(RecieveCallback), state);
                 }
             }
@@ -107,13 +98,13 @@ namespace Client_Server
         }
 
         //send back the result
-        private void Send(string Message, Socket Client)
+        protected override void Send(string Message, State ConnectioState)
         {
             byte[] Data = Encoding.ASCII.GetBytes(Message);
-            Client.BeginSend(Data, 0, Data.Length, 0,new AsyncCallback(SendCallback), Client);
+            ConnectioState.ClientSocket.BeginSend(Data, 0, Data.Length, 0,new AsyncCallback(SendCallback), ConnectioState.ClientSocket);
         }
 
-        private void SendCallback(IAsyncResult Result)
+        protected override void SendCallback(IAsyncResult Result)
         {
             try
             {

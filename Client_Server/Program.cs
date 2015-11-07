@@ -10,7 +10,7 @@ namespace Client_Server
     {
         static void Main(string[] args)
         {
-            TCPServer s = new TCPServer(2001, new System.Net.IPAddress(new Byte[] { 127, 0, 0, 1 }));
+            Server s = new UDPServer(2001, new System.Net.IPAddress(new Byte[] { 127, 0, 0, 1 }));
             s.Start();
         }
     }
